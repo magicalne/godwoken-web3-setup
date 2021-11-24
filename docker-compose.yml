@@ -1,0 +1,41 @@
+# {workspaceDir}/docker/docker-compose.yml
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:alpine
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_DB: lumos
+      POSTGRES_PASSWORD: password
+    volumes:
+      - ./docker/postgres-data:/var/lib/postgresql/data
+      # copy the sql script to create tables
+      - ./postgres/web3-indexer-sql/create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql
+
+  redis:
+    image: redis:bullseye
+    user: redis:redis
+    ports:
+      - 6379:6379
+    volumes:
+      - ./cache/activity/redis-data:/data
+
+  web3:
+    image: nervos/godwoken-web3-prebuilds:${DOCKER_WEB3_PREBUILD_IMAGE_TAG}
+    environment:
+      - PORT=${PORT}
+      - CREATOR_ACCOUNT_ID=${CREATOR_ACCOUNT_ID}
+      - GODWOKEN_JSON_RPC=${GODWOKEN_JSON_RPC}
+      - ROLLUP_TYPE_HASH:${ROLLUP_TYPE_HASH}
+
+    volumes:
+      - .:/code # the manual-build resource all stays in /code dir
+    command: bash /code/entrypoint.sh
+    ports:
+      - 8024:8024
+    depends_on:
+      - redis
+      - postgres

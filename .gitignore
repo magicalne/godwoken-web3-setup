@@ -1,0 +1,4 @@
+cache/
+docker/
+.env
+scripts-deploy-result.json
